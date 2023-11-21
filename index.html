@@ -1,6 +1,22 @@
 <!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="jquery-ui.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="external/jquery/jquery.js"></script>
+    <script src="jquery-ui.min.js"></script>
+</head>
 
-<div id="container">
+<body>
+    <div id="container"></div>
+
+    <div id="yearSlider">
+        <h2>Monthly Flights Cancelled</h2>
+        <div id="slider"></div>
+        <p id="sliderValues"></p>
+    </div>
+    
+</body>
+
     
 </div>
 
@@ -16,12 +32,59 @@
     const marginRight = 20;
     const marginBottom = 30;
     const marginLeft = 400;
-    const minYear = d3.min(data, d => d["Time.Year"]);
-    const maxYear = d3.max(data, d => d["Time.Year"]);
+    const minYear = parseInt(d3.min(data, d => d["Time.Year"]));
+    const maxYear = parseInt(d3.max(data, d => d["Time.Year"]));
     const airports = Array.from(new Set(data.map(d => d["Airport.Name"]))).sort(compareStrings);
+    const minMonthlyFlightsCancelled = parseInt(d3.min(data, d => d["Statistics.Flights.Cancelled"]));
+    const maxMonthlyFlightsCancelled = parseInt(d3.max(data, d => d["Statistics.Flights.Cancelled"]));
+    const attributes = ["Statistics.Flights.Cancelled"]
+    let ranges = [[minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled]]
+
+    console.log(data)
+    console.log(minMonthlyFlightsCancelled);
+    console.log(maxMonthlyFlightsCancelled);
+
+    $("#slider").slider({
+        range: true,
+        min: minMonthlyFlightsCancelled,
+        max: maxMonthlyFlightsCancelled,
+        values: [minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
+        step: 1,
+        slide: function(event, ui) {
+            document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+            filterData("Statistics.Flights.Cancelled", ui.values);
+        }
+    })
 
     function compareStrings(a, b) {
         return a < b;
+    }
+
+    function filterData(attr, values) {
+        for (let i = 0; i < attributes.length; i++) {
+            if (attr == attributes[i]) {
+                ranges[i] = values;
+            }
+        }
+        
+        var toVisualize = data.filter(function(d) {
+            return isInRange(d);
+        });
+        updateVis(toVisualize);
+    }
+
+    function isInRange(data) {
+        for (let i = 0; i < attributes.length; i++) {
+            if (data[attributes[i]] < ranges[i][0] || data[attributes[i]] > ranges[i][1]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function updateVis(toVisualize) {
+        console.log(toVisualize);
     }
 
     // Declare the x (horizontal position) scale.
