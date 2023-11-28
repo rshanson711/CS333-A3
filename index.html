@@ -8,7 +8,11 @@
 
 <body>
     <div id="container"></div>
-
+    <label for="normalizeCheckbox">
+        Normalize (per 1k flights):
+        <input id="normalizeCheckbox" type="checkbox">
+    </label>
+    
     <div id="yearSlider">
         <h2>Monthly Flights Cancelled</h2>
         <div id="slider"></div>
@@ -24,10 +28,11 @@
     import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
     const data = await d3.csv("airlines.csv");
+    let currentData = null;
 
     // Declare the chart dimensions and margins.
     const width = 1280;
-    const height = 720;
+    const height = 900;
     const marginTop = 20;
     const marginRight = 20;
     const marginBottom = 30;
@@ -35,20 +40,33 @@
     const minYear = parseInt(d3.min(data, d => d["Time.Year"]));
     const maxYear = parseInt(d3.max(data, d => d["Time.Year"]));
     const airports = Array.from(new Set(data.map(d => d["Airport.Name"]))).sort(compareStrings);
+
+    const airportDict = {};
+    for (let i = 0; i < airports.length; i++) {
+        let airport = airports[i];
+        airportDict[airport] = i;
+    }
+
+    console.log(airportDict);
     const minMonthlyFlightsCancelled = parseInt(d3.min(data, d => d["Statistics.Flights.Cancelled"]));
     const maxMonthlyFlightsCancelled = parseInt(d3.max(data, d => d["Statistics.Flights.Cancelled"]));
-    const attributes = ["Statistics.Flights.Cancelled"]
-    let ranges = [[minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled]]
+    const minMonthlyFlightsCancelledNorm = parseInt(d3.min(data, d => d["Statistics.Flights.Cancelled"] / d["Statistics.Flights.Total"] * 1000));
+    const maxMonthlyFlightsCancelledNorm = parseInt(d3.max(data, d => d["Statistics.Flights.Cancelled"] / d["Statistics.Flights.Total"] * 1000));
+    const attributes = ["Statistics.Flights.Cancelled"];
+    let ranges = [[minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled]];
+    let rangesNormalized = [[minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm]];
+    let normalize = false;
 
     // Declare the x (horizontal position) scale.
     const x = d3.scaleLinear()
-        .domain([minYear, maxYear])
+        .domain([minYear - 1, maxYear])
         .range([marginLeft, width - marginRight]);
 
     // Declare the y (vertical position) scale.
     const y = d3.scaleBand()
         .domain(airports)
-        .range([height - marginBottom, marginTop]);
+        .range([height - marginBottom, marginTop])
+        .padding(1);
 
     // Create the SVG container.
     const svg = d3.create("svg")
@@ -66,6 +84,7 @@
         .call(d3.axisLeft(y).ticks(29));
 
     console.log(data)
+    console.log(airports)
     console.log(minMonthlyFlightsCancelled);
     console.log(maxMonthlyFlightsCancelled);
 
@@ -81,6 +100,49 @@
         }
     })
 
+    console.log(document.getElementById("normalizeCheckbox"));
+
+    document.getElementById("normalizeCheckbox").addEventListener('change', function() {
+        if (this.checked) {
+            console.log("yesss");
+            normalize = true;
+
+            $("#slider").slider({
+                min: minMonthlyFlightsCancelledNorm,
+                max: maxMonthlyFlightsCancelledNorm,
+                values: [minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm],
+                slide: function(event, ui) {
+                    document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                    filterData("Statistics.Flights.Cancelled", ui.values);
+                }
+            });
+
+        } else {
+            console.log("no");
+            normalize = false;
+
+            $("#slider").slider({
+                min: minMonthlyFlightsCancelled,
+                max: maxMonthlyFlightsCancelled,
+                values: [minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
+                slide: function(event, ui) {
+                    document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                    filterData("Statistics.Flights.Cancelled", ui.values);
+                }
+            });
+        }
+    });
+
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+    function checkNormalize(e) {
+        if (e.checked) {
+            console.log("Checked");
+        } else {
+            console.log("Unchecked");
+        }
+    }
+
     function compareStrings(a, b) {
         return a < b;
     }
@@ -88,7 +150,11 @@
     function filterData(attr, values) {
         for (let i = 0; i < attributes.length; i++) {
             if (attr == attributes[i]) {
-                ranges[i] = values;
+                if (normalize) {
+                    rangesNormalized[i] = values;
+                } else {
+                    ranges[i] = values;
+                }
             }
         }
         
@@ -100,8 +166,25 @@
 
     function isInRange(data) {
         for (let i = 0; i < attributes.length; i++) {
-            if (data[attributes[i]] < ranges[i][0] || data[attributes[i]] > ranges[i][1]) {
-                return false;
+            // console.log(data);
+            let totalFlights = parseInt(data['Statistics.Flights.Total']);
+            // console.log('Total Flights: ' + totalFlights);
+            // console.log('Cancellations: ' + data[attributes[i]]);
+            // console.log('Math: ' + (data[attributes[i]] / totalFlights))
+            // console.log('More math: ' + ((data[attributes[i]] / totalFlights) * 1000.0));
+            if (normalize) {
+                let attrPer1k = parseFloat(data[attributes[i]]) / totalFlights * 1000.0;
+                // console.log(attrPer1k);
+                // console.log(rangesNormalized[i][0]);
+                // console.log(rangesNormalized[i][1]);
+
+                if (attrPer1k < rangesNormalized[i][0] || attrPer1k > rangesNormalized[i][1]) {
+                    return false;
+                }
+            } else {
+                if (data[attributes[i]] < ranges[i][0] || data[attributes[i]] > ranges[i][1]) {
+                    return false;
+                }
             }
         }
 
@@ -110,12 +193,52 @@
 
     function updateVis(toVisualize) {
         console.log(toVisualize);
+        currentData = toVisualize;
 
         let svg = d3.select("svg")
-        svg.selectAll("whatever").data(toVisualize).enter().append("circle").attr("cx", function(d) {return x(parseInt(d['Time.Year']))})
+        // svg.selectAll("whatever").data(toVisualize).enter().append("circle").attr("cx", function(d) {return x(parseInt(d['Time.Year']))})
+        // .attr("cy", function(d) {return y(d['Airport.Name'])})
+        // .attr("r", 2)
+        // .exit().remove();
+        svg.selectAll("circle").data(toVisualize).join("circle")
+        .attr("r", 10)
+        .attr("cx", function(d) {return x(parseInt(d['Time.Year']))})
         .attr("cy", function(d) {return y(d['Airport.Name'])})
-        .attr("r", 2)
-        .exit().remove();
+        .attr("rowId", function(d) {return airportDict[d['Airport.Name']]})
+        .style("fill-opacity", 1/12)
+        .style("stroke", "black")
+        .on("mouseover", (event, d) => {
+            let text = getTooltipText(d);
+            console.log(text);
+
+            tooltip.transition().duration(200).style("opacity", 0.9);
+            tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
+            highlightRow(airportDict[d['Airport.Name']]);
+        })
+        .on("mouseout", () => {
+            tooltip.transition().duration(500).style("opacity", 0);
+            unhighlightRow();
+        });
+    }
+
+    function getTooltipText(data) {
+        let output = `${data['Airport.Name']}<br>`;
+
+        for (let i = 0; i < currentData.length; i++) {
+            if (currentData[i]['Airport.Name'] == data['Airport.Name'] && currentData[i]['Time.Year'] == data['Time.Year']) {
+                output = output + currentData[i]['Time.Month Name'] + ' ' + currentData[i]['Time.Year'] + '<br>';
+            }
+        }
+
+        return output;
+    }
+
+    function highlightRow(rowId) {
+        d3.selectAll("circle").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
+    }
+
+    function unhighlightRow() {
+        d3.selectAll("circle").classed("highlight", false);
     }
 
     
