@@ -39,14 +39,14 @@
     let currentData = null;
 
     // Declare the chart dimensions and margins.
-    const width = 1280;
+    const width = 1000;
     const height = 900;
     const subplotWidth = 600;
     const subplotHeight = 800;
     const marginTop = 20;
     const marginRight = 20;
     const marginBottom = 30;
-    const marginLeft = 400;
+    const marginLeft = 350;
     const subplotMarginLeft = 40;
     const minYear = parseInt(d3.min(data, d => d["Time.Year"]));
     const maxYear = parseInt(d3.max(data, d => d["Time.Year"]));
@@ -432,6 +432,19 @@
         })
         .style('fill', d => subplotColors(d['Airport.Name']))
         .style('stroke', 'black');
+
+        // Add title (year we're looking at)
+        console.log(selectedSubplotDataYear);
+
+        // subplotSVG.selectAll('text')
+        // .data(selectedSubplotDataYear)
+        // .enter()
+        // .append('text')
+        // .attr('x', (subplotWidth / 2))
+        // .attr('y', 20)
+        // .attr('text-anchor', 'middle')
+        // .style('font-size', '16px')
+        // .text(d => d);
 
         updateSubplotLegend(selectedAirports);
     }
