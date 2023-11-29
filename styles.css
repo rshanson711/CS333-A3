@@ -13,4 +13,22 @@
 
 .highlight {
     stroke: red !important;
+    fill: gold !important;
+}
+
+.dim {
+    opacity: 0.2;
+}
+
+#container {
+    width: 1280px;
+}
+
+#controlsContainer {
+    width: fit-content;
+}
+
+#mainContainer {
+    display: flex;
+    align-items: flex-end;
 }

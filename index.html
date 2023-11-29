@@ -7,16 +7,24 @@
 </head>
 
 <body>
-    <div id="container"></div>
+    <div id="mainContainer">
+        <div id="container"></div>
+        <div id="subplotContainer"></div>
+    </div>
+    
+    
+    
     <label for="normalizeCheckbox">
         Normalize (per 1k flights):
         <input id="normalizeCheckbox" type="checkbox">
     </label>
     
-    <div id="yearSlider">
-        <h2>Monthly Flights Cancelled</h2>
-        <div id="slider"></div>
-        <p id="sliderValues"></p>
+    <div id="controlsContainer">
+        <div id="yearSlider">
+            <h2>Monthly Flights Cancelled</h2>
+            <div id="slider"></div>
+            <p id="sliderValues"></p>
+        </div>
     </div>
     
 </body>
@@ -76,7 +84,7 @@
         .padding(1);
 
     let subplotX = d3.scaleBand()
-        .domain(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
+        .domain(['January', 'Febuary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
         .range([subplotMarginLeft, subplotWidth - marginRight])
         .padding(1);
 
@@ -114,7 +122,9 @@
     .call(d3.axisBottom(subplotX));
 
     // Add legend
-    let subplotLegend = svg.append('g')
+    let subplotLegend = d3.create('svg')
+    // .attr('width', 1000)
+    // .attr('height', 1000)
     .attr('class', 'subplotLegend');
 
     // Add the y-axis.
@@ -142,6 +152,10 @@
     // console.log(document.getElementById("normalizeCheckbox"));
 
     document.getElementById("normalizeCheckbox").addEventListener('change', function() {
+
+        // Remove everything subplot-related
+        clearSubplotAndLegend();
+
         if (this.checked) {
             normalize = true;
 
@@ -242,6 +256,7 @@
         .attr("cx", function(d) {return x(parseInt(d['Time.Year']))})
         .attr("cy", function(d) {return y(d['Airport.Name'])})
         .attr("rowId", function(d) {return airportDict[d['Airport.Name']]})
+        .attr('class', 'mainDot')
         .style("fill-opacity", 1/12)
         .style("stroke", "black")
         .on("mouseover", (event, d) => {
@@ -250,33 +265,27 @@
 
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlightRow(airportDict[d['Airport.Name']]);
+            highlight(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlightRow();
+            unhighlight();
         })
         .on("click", (event, d) => {
             let dataYear = parseInt(d['Time.Year']);
             let newSelection = [];
 
             if (selectedSubplotDataYear != dataYear) {
-                selectedSubplotData = [];
+                clearSubplotAndLegend();
                 selectedSubplotDataYear = dataYear;
-                subplotSVG.selectAll('.line').remove();
             }
             
             for (let i = 0; i < data.length; i++) {
                 if (data[i]['Airport.Name'] == d['Airport.Name'] && data[i]['Time.Year'] == dataYear) {
-                    // newSelection.push(data[i]);
                     selectedSubplotData.push(data[i]);
                 }
             }
-            // selectedSubplotData.push([newSelection]);
             selectedSubplotData = [...new Set(selectedSubplotData)];
-
-            // selectedSubplotData.push(d);
-            // console.log(selectedSubplotData);
 
             updateSubplotYAxis();
             updateSubplotXAxis();
@@ -296,12 +305,17 @@
         return output;
     }
 
-    function highlightRow(rowId) {
-        d3.selectAll("circle").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
+    function highlight(rowId) {
+        d3.selectAll(".mainDot").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
+        d3.selectAll(".dot").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
+        d3.selectAll(".dot").classed("dim", d => airportDict[d['Airport.Name']] != rowId);
+        d3.selectAll('.line').classed('dim', d => airportDict[d[0]['Airport.Name']] != rowId);
     }
 
-    function unhighlightRow() {
+    function unhighlight() {
         d3.selectAll("circle").classed("highlight", false);
+        d3.selectAll(".dot").classed("dim", false);
+        d3.selectAll('.line').classed('dim', false);
     }
 
     function updateSubplotYAxis() {
@@ -336,7 +350,7 @@
         } else if (selectedSubplotDataYear == 2016) {
             months = ['January'];
         } else {
-            months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            months = ['January', 'Febuary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         }
 
         subplotX = d3.scaleBand()
@@ -353,7 +367,10 @@
     function updateSubplotVis() {
         let selectedAirports = Array.from(new Set(selectedSubplotData.map(data => data['Airport.Name'])));
         subplotColors.domain(selectedAirports);
+        // console.log(selectedAirports);
+        // console.log("Colors:");
         // console.log(subplotColors.domain());
+        // console.log(subplotColors.range());
 
         let arrayedSubplotData = [];
         let size = 12;
@@ -383,28 +400,11 @@
 
         if (normalize) {
             line = d3.line()
+            .x(d => subplotX(d['Time.Month Name']))
             .y(d => subplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
-        // subplotSVG.select('path.line').remove();
-        // subplotSVG.append('path')
-        // .data([selectedSubplotData])
-        // .attr('class', 'line')
-        // .attr('d', line)
-        // .attr('fill', 'none')
-        // .attr('stroke', d => subplotColors(d['Airport.Name']));
-
-        // subplotSVG.select('path.line').remove();
-        // subplotSVG.append('path')
-        // .data(arrayedSubplotData)
-        // .attr('class', 'line')
-        // .attr('d', line)
-        // .attr('fill', 'none')
-        // .attr('stroke', d => {
-        //     console.log(d);
-        //     return subplotColors(d['Airport.Name']);
-        // });
-
+        // Add lines
         subplotSVG.selectAll('.line')
         .data(arrayedSubplotData)
         .enter()
@@ -412,10 +412,26 @@
         .attr('class', 'line')
         .attr('d', line)
         .attr('fill', 'none')
-        .attr('stroke', d => {
-            console.log(d);
-            return subplotColors(d['Airport.Name']);
-        });
+        .attr('stroke-width', '4px')
+        .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
+
+        // Add monthly dots
+        subplotSVG.selectAll('.dot')
+        .data(selectedSubplotData)
+        .enter()
+        .append('circle')
+        .attr('class', 'dot')
+        .attr('r', 4)
+        .attr('cx', function(d) {return subplotX(d['Time.Month Name'])})
+        .attr('cy', function(d) {
+            if (normalize) {
+                return subplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            } else {
+                return subplotY(parseFloat(d["Statistics.Flights.Cancelled"]))
+            }
+        })
+        .style('fill', d => subplotColors(d['Airport.Name']))
+        .style('stroke', 'black');
 
         updateSubplotLegend(selectedAirports);
     }
@@ -427,25 +443,36 @@
         .enter()
         .append('rect')
         .attr('x', 0)
-        .attr('y', (d, i) => i * 10)
-        .attr('width', 10)
+        .attr('y', (d, i) => i * 15 + 10)
+        .attr('width', 20)
         .attr('height', 5)
-        .attr('fill', d => subplotColors(d['Airport.Name']));
+        .attr('fill', d => subplotColors(d))
+        .attr('class', 'legendBar');
 
         subplotLegend.selectAll('text')
-        .data([selectedAirports])
+        .data(selectedAirports)
         .enter()
         .append('text')
-        .attr('x', 20)
-        .attr('y', (d, i) => i * 10 + 10)
-        .text(d => d['Airport.Name'])
+        .attr('x', 22)
+        .attr('y', (d, i) => i * 15 + 15)
+        .attr('class', 'legendLabel')
+        .text(d => d)
         .style('font-size', '12px');
+    }
+
+    function clearSubplotAndLegend() {
+        subplotSVG.selectAll('.line').remove();
+        subplotSVG.selectAll('.dot').remove();
+        subplotLegend.selectAll('.legendBar').remove();
+        subplotLegend.selectAll('.legendLabel').remove();
+        selectedSubplotData = [];
     }
 
     
     // Append the SVG element.
     container.append(svg.node());
-    container.append(subplotSVG.node());
+    subplotContainer.append(subplotSVG.node());
+    subplotContainer.append(subplotLegend.node());
 </script>
 
 
