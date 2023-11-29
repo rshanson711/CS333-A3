@@ -456,11 +456,17 @@
         .enter()
         .append('rect')
         .attr('x', 0)
-        .attr('y', (d, i) => i * 15 + 10)
+        .attr('y', (d, i) => i * 15 + 5)
         .attr('width', 20)
-        .attr('height', 5)
+        .attr('height', 10)
         .attr('fill', d => subplotColors(d))
-        .attr('class', 'legendBar');
+        .attr('class', 'legendBar')
+        .on('mouseover', (event, d) => {
+            highlight(airportDict[d]);
+        })
+        .on('mouseout', () => {
+            unhighlight();
+        });
 
         subplotLegend.selectAll('text')
         .data(selectedAirports)
@@ -470,7 +476,13 @@
         .attr('y', (d, i) => i * 15 + 15)
         .attr('class', 'legendLabel')
         .text(d => d)
-        .style('font-size', '12px');
+        .style('font-size', '12px')
+        .on('mouseover', (event, d) => {
+            highlight(airportDict[d]);
+        })
+        .on('mouseout', () => {
+            unhighlight();
+        });
     }
 
     function clearSubplotAndLegend() {
