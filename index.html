@@ -10,20 +10,34 @@
     <div id="mainContainer">
         <div id="container"></div>
         <div id="subplotContainer"></div>
-    </div>
-    
-    
-    
-    <label for="normalizeCheckbox">
-        Normalize (per 1k flights):
-        <input id="normalizeCheckbox" type="checkbox">
-    </label>
-    
+    </div> 
     <div id="controlsContainer">
-        <div id="yearSlider">
+        <label for="normalizeCheckbox">
+            <input id="normalizeCheckbox" type="checkbox">
+            Normalize (per 1k flights)
+        </label>
+        <label for="resetButton">
+            <button id="resetButton">Reset Settings</button>
+        </label>
+        <div id="monthlyCancellationsSliderContainer">
             <h2>Monthly Flights Cancelled</h2>
-            <div id="slider"></div>
-            <p id="sliderValues"></p>
+            <div id="monthlyCancellationsSlider"></div>
+            <p id="monthlyCancellationsSliderValues"></p>
+        </div>
+        <div id="monthlyDelaysSliderContainer">
+            <h2>Monthly Flights Delayed</h2>
+            <div id="monthlyDelaysSlider"></div>
+            <p id="monthlyDelaysSliderValues"></p>
+        </div>
+        <div id="monthlyDiversionsSliderContainer">
+            <h2>Monthly Flights Diverted</h2>
+            <div id="monthlyDiversionsSlider"></div>
+            <p id="monthlyDiversionsSliderValues"></p>
+        </div>
+        <div id="monthlyOnTimeSliderContainer">
+            <h2>Monthly Flights On-Time</h2>
+            <div id="monthlyOnTimeSlider"></div>
+            <p id="monthlyOnTimeSliderValues"></p>
         </div>
     </div>
     
@@ -58,18 +72,47 @@
         airportDict[airport] = i;
     }
 
-    // console.log(airportDict);
+    // Monthly Flights Cancelled data
     const minMonthlyFlightsCancelled = d3.min(data, d => parseInt(d["Statistics.Flights.Cancelled"]));
     const maxMonthlyFlightsCancelled = d3.max(data, d => parseInt(d["Statistics.Flights.Cancelled"]));
-    const minMonthlyFlightsCancelledNorm = d3.min(data, d => parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
-    const maxMonthlyFlightsCancelledNorm = d3.max(data, d => parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
-    const attributes = ["Statistics.Flights.Cancelled"];
-    let ranges = [[minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled]];
-    let rangesNormalized = [[minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm]];
+    const minMonthlyFlightsCancelledNorm = d3.min(data, d => Math.round(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+    const maxMonthlyFlightsCancelledNorm = d3.max(data, d => Math.round(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+
+    // Monthly Flights Delayed data
+    const minMonthlyFlightsDelayed = d3.min(data, d => parseInt(d["Statistics.Flights.Delayed"]));
+    const maxMonthlyFlightsDelayed = d3.max(data, d => parseInt(d["Statistics.Flights.Delayed"]));
+    const minMonthlyFlightsDelayedNorm = d3.min(data, d => Math.round(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+    const maxMonthlyFlightsDelayedNorm = d3.max(data, d => Math.round(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+
+    // Monthly Flights Diverted data
+    const minMonthlyFlightsDiverted = d3.min(data, d => parseInt(d["Statistics.Flights.Diverted"]));
+    const maxMonthlyFlightsDiverted = d3.max(data, d => parseInt(d["Statistics.Flights.Diverted"]));
+    const minMonthlyFlightsDivertedNorm = d3.min(data, d => Math.round(parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+    const maxMonthlyFlightsDivertedNorm = d3.max(data, d => Math.round(parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+
+    // Monthly Flights On-Time data
+    const minMonthlyFlightsOnTime = d3.min(data, d => parseInt(d["Statistics.Flights.On Time"]));
+    const maxMonthlyFlightsOnTime = d3.max(data, d => parseInt(d["Statistics.Flights.On Time"]));
+    const minMonthlyFlightsOnTimeNorm = d3.min(data, d => Math.round(parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+    const maxMonthlyFlightsOnTimeNorm = d3.max(data, d => Math.round(parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+
+
+    const attributes = ["Statistics.Flights.Cancelled", "Statistics.Flights.Delayed", "Statistics.Flights.Diverted", "Statistics.Flights.On Time"];
+    let ranges = [[minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
+        [minMonthlyFlightsDelayed, maxMonthlyFlightsDelayed],
+        [minMonthlyFlightsDiverted, maxMonthlyFlightsDiverted],
+        [minMonthlyFlightsOnTime, maxMonthlyFlightsOnTime]];
+    let rangesNormalized = [[minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm],
+        [minMonthlyFlightsDelayedNorm, maxMonthlyFlightsDelayedNorm],
+        [minMonthlyFlightsDivertedNorm, maxMonthlyFlightsDivertedNorm],
+        [minMonthlyFlightsOnTimeNorm, maxMonthlyFlightsOnTimeNorm]];
     let normalize = false;
     let selectedSubplotData = [];
     let selectedSubplotDataYear = null;
-    let subplotYAxisExists = false;
+    let cancelledSubplotYAxisExists = false;
+    let delayedSubplotYAxisExists = false;
+    let divertedSubplotYAxisExists = false;
+    let onTimeSubplotYAxisExists = false;
     let subplotLinesExist = false;
 
     // Declare the x (horizontal position) scale.
@@ -91,7 +134,10 @@
     // console.log(marginLeft + width);
     // console.log(subplotWidth - marginRight);
 
-    let subplotY = null;
+    let cancelledSubplotY = null;
+    let delayedSubplotY = null;
+    let divertedSubplotY = null;
+    let onTimeSubplotY = null;
     
     let subplotColors = d3.scaleOrdinal(d3.schemeCategory10);
 
@@ -110,13 +156,46 @@
         .attr("transform", `translate(${marginLeft},0)`)
         .call(d3.axisLeft(y).ticks(29));
 
-    // Create subplot SVG container
-    const subplotSVG = d3.create("svg")
+    // Create cancelled subplot SVG container
+    const cancelledSubplotSVG = d3.create("svg")
     .attr("width", subplotWidth)
     .attr("height", subplotHeight);
 
     // Add x-axis
-    subplotSVG.append("g")
+    cancelledSubplotSVG.append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+    .call(d3.axisBottom(subplotX));
+
+    // Create delayed subplot SVG container
+    const delayedSubplotSVG = d3.create("svg")
+    .attr("width", subplotWidth)
+    .attr("height", subplotHeight);
+
+    // Add x-axis
+    delayedSubplotSVG.append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+    .call(d3.axisBottom(subplotX));
+
+    // Create diverted subplot SVG container
+    const divertedSubplotSVG = d3.create("svg")
+    .attr("width", subplotWidth)
+    .attr("height", subplotHeight);
+
+    // Add x-axis
+    divertedSubplotSVG.append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+    .call(d3.axisBottom(subplotX));
+
+    // Create on-time subplot SVG container
+    const onTimeSubplotSVG = d3.create("svg")
+    .attr("width", subplotWidth)
+    .attr("height", subplotHeight);
+
+    // Add x-axis
+    onTimeSubplotSVG.append("g")
     .attr("class", "x-axis")
     .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
     .call(d3.axisBottom(subplotX));
@@ -137,51 +216,85 @@
     // console.log(minMonthlyFlightsCancelled);
     // console.log(maxMonthlyFlightsCancelled);
 
-    $("#slider").slider({
+    // Monthly Cancellations Slider
+    $("#monthlyCancellationsSlider").slider({
         range: true,
         min: minMonthlyFlightsCancelled,
         max: maxMonthlyFlightsCancelled,
         values: [minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
         step: 1,
         slide: function(event, ui) {
-            document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+            document.querySelector("#monthlyCancellationsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
             filterData("Statistics.Flights.Cancelled", ui.values);
         }
-    })
+    });
+
+    // Monthly Delays Slider
+    $("#monthlyDelaysSlider").slider({
+        range: true,
+        min: minMonthlyFlightsDelayed,
+        max: maxMonthlyFlightsDelayed,
+        values: [minMonthlyFlightsDelayed, maxMonthlyFlightsDelayed],
+        step: 1,
+        slide: function(event, ui) {
+            document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+            filterData("Statistics.Flights.Delayed", ui.values);
+        }
+    });
+
+    // Monthly Diversions Slider
+    $("#monthlyDiversionsSlider").slider({
+        range: true,
+        min: minMonthlyFlightsDiverted,
+        max: maxMonthlyFlightsDiverted,
+        values: [minMonthlyFlightsDiverted, maxMonthlyFlightsDiverted],
+        step: 1,
+        slide: function(event, ui) {
+            document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+            filterData("Statistics.Flights.Diverted", ui.values);
+        }
+    });
+
+    // Monthly On-Time Slider
+    $("#monthlyOnTimeSlider").slider({
+        range: true,
+        min: minMonthlyFlightsOnTime,
+        max: maxMonthlyFlightsOnTime,
+        values: [minMonthlyFlightsOnTime, maxMonthlyFlightsOnTime],
+        step: 1,
+        slide: function(event, ui) {
+            document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+            filterData("Statistics.Flights.On Time", ui.values);
+        }
+    });
 
     // console.log(document.getElementById("normalizeCheckbox"));
 
     document.getElementById("normalizeCheckbox").addEventListener('change', function() {
 
         // Remove everything subplot-related
-        clearSubplotAndLegend();
+        clearSubplotsAndLegend();
 
         if (this.checked) {
             normalize = true;
-
-            $("#slider").slider({
-                min: minMonthlyFlightsCancelledNorm,
-                max: maxMonthlyFlightsCancelledNorm,
-                values: [minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm],
-                slide: function(event, ui) {
-                    document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
-                    filterData("Statistics.Flights.Cancelled", ui.values);
-                }
-            });
-
+            setSlidersToNormalized();
+            setSliderRangesToNormalized();
+            svg.selectAll('circle').remove();
+            
         } else {
             normalize = false;
-
-            $("#slider").slider({
-                min: minMonthlyFlightsCancelled,
-                max: maxMonthlyFlightsCancelled,
-                values: [minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
-                slide: function(event, ui) {
-                    document.querySelector("#sliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
-                    filterData("Statistics.Flights.Cancelled", ui.values);
-                }
-            });
+            setSlidersToUnnormalized();
+            setSliderRangesToUnnormalized();
+            svg.selectAll('circle').remove();
         }
+    });
+
+    document.getElementById("resetButton").addEventListener('click', () => {
+        clearSubplotsAndLegend();
+        document.getElementById('normalizeCheckbox').checked = false;
+        setSlidersToUnnormalized();
+        setSliderRangesToUnnormalized();
+        svg.selectAll('circle').remove();
     });
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
@@ -276,7 +389,7 @@
             let newSelection = [];
 
             if (selectedSubplotDataYear != dataYear) {
-                clearSubplotAndLegend();
+                clearSubplotsAndLegend();
                 selectedSubplotDataYear = dataYear;
             }
             
@@ -287,9 +400,11 @@
             }
             selectedSubplotData = [...new Set(selectedSubplotData)];
 
-            updateSubplotYAxis();
+            updateCancelledSubplotYAxis();
+            updateDelayedSubplotYAxis();
             updateSubplotXAxis();
-            updateSubplotVis();
+            updateCancelledSubplotVis();
+            updateDelayedSubplotVis();
         });
     }
 
@@ -318,7 +433,7 @@
         d3.selectAll('.line').classed('dim', false);
     }
 
-    function updateSubplotYAxis() {
+    function updateCancelledSubplotYAxis() {
         let axisAirports = Array.from(new Set(selectedSubplotData.map(d => d["Airport.Name"]))).sort(compareStrings);
         let minFlightsCancelled = d3.min(selectedSubplotData, d => parseInt(d['Statistics.Flights.Cancelled']));
         let maxFlightsCancelled = d3.max(selectedSubplotData, d => parseInt(d['Statistics.Flights.Cancelled']));
@@ -329,18 +444,42 @@
         }
         // console.log('Min and Max: ' + minFlightsCancelled + ' ' + maxFlightsCancelled);
 
-        subplotY = d3.scaleLinear()
+        cancelledSubplotY = d3.scaleLinear()
         .domain([minFlightsCancelled, maxFlightsCancelled])
         .range([subplotHeight - marginBottom, marginTop]);
 
-        if (!subplotYAxisExists) {
-            subplotSVG.append('g').attr("class", 'y-axis');
-            subplotYAxisExists = true;
+        if (!cancelledSubplotYAxisExists) {
+            cancelledSubplotSVG.append('g').attr("class", 'y-axis');
+            cancelledSubplotYAxisExists = true;
         }
 
-        subplotSVG.select(".y-axis")
+        cancelledSubplotSVG.select(".y-axis")
         .attr("transform", `translate(${subplotMarginLeft},0)`)
-        .call(d3.axisLeft(subplotY).ticks(10));
+        .call(d3.axisLeft(cancelledSubplotY).ticks(10));
+    }
+
+    function updateDelayedSubplotYAxis() {
+        let axisAirports = Array.from(new Set(selectedSubplotData.map(d => d["Airport.Name"]))).sort(compareStrings);
+        let minFlightsDelayed = d3.min(selectedSubplotData, d => parseInt(d['Statistics.Flights.Delayed']));
+        let maxFlightsDelayed = d3.max(selectedSubplotData, d => parseInt(d['Statistics.Flights.Delayed']));
+
+        if (normalize) {
+            minFlightsDelayed = d3.min(selectedSubplotData, d => parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            maxFlightsDelayed = d3.max(selectedSubplotData, d => parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+        }
+
+        delayedSubplotY = d3.scaleLinear()
+        .domain([minFlightsDelayed, maxFlightsDelayed])
+        .range([subplotHeight - marginBottom, marginTop]);
+
+        if (!delayedSubplotYAxisExists) {
+            delayedSubplotSVG.append('g').attr("class", 'y-axis');
+            delayedSubplotYAxisExists = true;
+        }
+
+        delayedSubplotSVG.select(".y-axis")
+        .attr("transform", `translate(${subplotMarginLeft},0)`)
+        .call(d3.axisLeft(delayedSubplotY).ticks(10));
     }
 
     function updateSubplotXAxis() {
@@ -359,12 +498,12 @@
         .padding(1);
 
         // console.log(months);
-        subplotSVG.select(".x-axis")
+        cancelledSubplotSVG.select(".x-axis")
         .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
         .call(d3.axisBottom(subplotX));
     }
 
-    function updateSubplotVis() {
+    function updateCancelledSubplotVis() {
         let selectedAirports = Array.from(new Set(selectedSubplotData.map(data => data['Airport.Name'])));
         subplotColors.domain(selectedAirports);
         // console.log(selectedAirports);
@@ -396,16 +535,16 @@
 
         let line = d3.line()
         .x(d => subplotX(d['Time.Month Name']))
-        .y(d => subplotY(d['Statistics.Flights.Cancelled']));
+        .y(d => cancelledSubplotY(d['Statistics.Flights.Cancelled']));
 
         if (normalize) {
             line = d3.line()
             .x(d => subplotX(d['Time.Month Name']))
-            .y(d => subplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+            .y(d => cancelledSubplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
         // Add lines
-        subplotSVG.selectAll('.line')
+        cancelledSubplotSVG.selectAll('.line')
         .data(arrayedSubplotData)
         .enter()
         .append('path')
@@ -416,7 +555,7 @@
         .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
 
         // Add monthly dots
-        subplotSVG.selectAll('.dot')
+        cancelledSubplotSVG.selectAll('.dot')
         .data(selectedSubplotData)
         .enter()
         .append('circle')
@@ -425,27 +564,84 @@
         .attr('cx', function(d) {return subplotX(d['Time.Month Name'])})
         .attr('cy', function(d) {
             if (normalize) {
-                return subplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+                return cancelledSubplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
             } else {
-                return subplotY(parseFloat(d["Statistics.Flights.Cancelled"]))
+                return cancelledSubplotY(parseFloat(d["Statistics.Flights.Cancelled"]))
             }
         })
         .style('fill', d => subplotColors(d['Airport.Name']))
         .style('stroke', 'black');
 
-        // Add title (year we're looking at)
-        console.log(selectedSubplotDataYear);
+        // Update legend
+        updateSubplotLegend(selectedAirports);
+    }
 
-        // subplotSVG.selectAll('text')
-        // .data(selectedSubplotDataYear)
-        // .enter()
-        // .append('text')
-        // .attr('x', (subplotWidth / 2))
-        // .attr('y', 20)
-        // .attr('text-anchor', 'middle')
-        // .style('font-size', '16px')
-        // .text(d => d);
+    function updateDelayedSubplotVis() {
+        let selectedAirports = Array.from(new Set(selectedSubplotData.map(data => data['Airport.Name'])));
+        subplotColors.domain(selectedAirports);
 
+        let arrayedSubplotData = [];
+        let size = 12;
+
+        if (selectedSubplotDataYear == 2003) {
+            size = 7;
+        } else if (selectedSubplotDataYear == 2016) {
+            size = 1;
+        }
+
+        let selection = [selectedSubplotData[0]]
+        for (let i = 1; i < selectedSubplotData.length; i++) {
+            selection.push(selectedSubplotData[i]);
+
+            if ((i + 1) % size == 0) {
+                arrayedSubplotData.push(selection);
+                selection = [];
+            }
+        }
+
+        // console.log('Arrayed data:');
+        // console.log(arrayedSubplotData);
+
+        let line = d3.line()
+        .x(d => subplotX(d['Time.Month Name']))
+        .y(d => delayedSubplotY(d['Statistics.Flights.Delayed']));
+
+        if (normalize) {
+            line = d3.line()
+            .x(d => subplotX(d['Time.Month Name']))
+            .y(d => delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+        }
+
+        // Add lines
+        delayedSubplotSVG.selectAll('.line')
+        .data(arrayedSubplotData)
+        .enter()
+        .append('path')
+        .attr('class', 'line')
+        .attr('d', line)
+        .attr('fill', 'none')
+        .attr('stroke-width', '4px')
+        .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
+
+        // Add monthly dots
+        delayedSubplotSVG.selectAll('.dot')
+        .data(selectedSubplotData)
+        .enter()
+        .append('circle')
+        .attr('class', 'dot')
+        .attr('r', 4)
+        .attr('cx', function(d) {return subplotX(d['Time.Month Name'])})
+        .attr('cy', function(d) {
+            if (normalize) {
+                return delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            } else {
+                return delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]))
+            }
+        })
+        .style('fill', d => subplotColors(d['Airport.Name']))
+        .style('stroke', 'black');
+
+        // Update legend
         updateSubplotLegend(selectedAirports);
     }
 
@@ -485,19 +681,151 @@
         });
     }
 
-    function clearSubplotAndLegend() {
-        subplotSVG.selectAll('.line').remove();
-        subplotSVG.selectAll('.dot').remove();
+    function clearSubplotsAndLegend() {
+        cancelledSubplotSVG.selectAll('.line').remove();
+        cancelledSubplotSVG.selectAll('.dot').remove();
+        delayedSubplotSVG.selectAll('.line').remove();
+        delayedSubplotSVG.selectAll('.dot').remove();
+        divertedSubplotSVG.selectAll('.line').remove();
+        divertedSubplotSVG.selectAll('.dot').remove();
+        onTimeSubplotSVG.selectAll('.line').remove();
+        onTimeSubplotSVG.selectAll('.dot').remove();
         subplotLegend.selectAll('.legendBar').remove();
         subplotLegend.selectAll('.legendLabel').remove();
         selectedSubplotData = [];
     }
 
+    function setSlidersToUnnormalized() {
+        // Monthly Cancellations Slider
+        $("#monthlyCancellationsSlider").slider({
+            range: true,
+            min: minMonthlyFlightsCancelled,
+            max: maxMonthlyFlightsCancelled,
+            values: [minMonthlyFlightsCancelled, maxMonthlyFlightsCancelled],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyCancellationsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Cancelled", ui.values);
+            }
+        });
+
+        // Monthly Delays Slider
+        $("#monthlyDelaysSlider").slider({
+            range: true,
+            min: minMonthlyFlightsDelayed,
+            max: maxMonthlyFlightsDelayed,
+            values: [minMonthlyFlightsDelayed, maxMonthlyFlightsDelayed],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Delayed", ui.values);
+            }
+        });
+
+        // Monthly Diversions Slider
+        $("#monthlyDiversionsSlider").slider({
+            range: true,
+            min: minMonthlyFlightsDiverted,
+            max: maxMonthlyFlightsDiverted,
+            values: [minMonthlyFlightsDiverted, maxMonthlyFlightsDiverted],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Diverted", ui.values);
+            }
+        });
+
+        // Monthly On-Time Slider
+        $("#monthlyOnTimeSlider").slider({
+            range: true,
+            min: minMonthlyFlightsOnTime,
+            max: maxMonthlyFlightsOnTime,
+            values: [minMonthlyFlightsOnTime, maxMonthlyFlightsOnTime],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.On Time", ui.values);
+            }
+        });
+    }
+
+    function setSlidersToNormalized() {
+        // Monthly Cancellations Slider
+        $("#monthlyCancellationsSlider").slider({
+            range: true,
+            min: minMonthlyFlightsCancelledNorm,
+            max: maxMonthlyFlightsCancelledNorm,
+            values: [minMonthlyFlightsCancelledNorm, maxMonthlyFlightsCancelledNorm],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyCancellationsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Cancelled", ui.values);
+            }
+        });
+
+        // Monthly Delays Slider
+        $("#monthlyDelaysSlider").slider({
+            range: true,
+            min: minMonthlyFlightsDelayedNorm,
+            max: maxMonthlyFlightsDelayedNorm,
+            values: [minMonthlyFlightsDelayedNorm, maxMonthlyFlightsDelayedNorm],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Delayed", ui.values);
+            }
+        });
+
+        // Monthly Diversions Slider
+        $("#monthlyDiversionsSlider").slider({
+            range: true,
+            min: minMonthlyFlightsDivertedNorm,
+            max: maxMonthlyFlightsDivertedNorm,
+            values: [minMonthlyFlightsDivertedNorm, maxMonthlyFlightsDivertedNorm],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.Diverted", ui.values);
+            }
+        });
+
+        // Monthly On-Time Slider
+        $("#monthlyOnTimeSlider").slider({
+            range: true,
+            min: minMonthlyFlightsOnTimeNorm,
+            max: maxMonthlyFlightsOnTimeNorm,
+            values: [minMonthlyFlightsOnTimeNorm, maxMonthlyFlightsOnTimeNorm],
+            step: 1,
+            slide: function(event, ui) {
+                document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + ui.values[0] + "-" + ui.values[1];
+                filterData("Statistics.Flights.On Time", ui.values);
+            }
+        });
+    }
+
+    function setSliderRangesToUnnormalized() {
+        document.querySelector("#monthlyCancellationsSliderValues").textContent = "Range: " + minMonthlyFlightsCancelled + "-" + maxMonthlyFlightsCancelled;
+        document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + minMonthlyFlightsDelayed + "-" + maxMonthlyFlightsDelayed;
+        document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + minMonthlyFlightsDiverted + "-" + maxMonthlyFlightsDiverted;
+        document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + minMonthlyFlightsOnTime + "-" + maxMonthlyFlightsOnTime;
+    }
+
+    function setSliderRangesToNormalized() { 
+        document.querySelector("#monthlyCancellationsSliderValues").textContent = "Range: " + minMonthlyFlightsCancelledNorm + "-" + maxMonthlyFlightsCancelledNorm;
+        document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + minMonthlyFlightsDelayedNorm + "-" + maxMonthlyFlightsDelayedNorm;
+        document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + minMonthlyFlightsDivertedNorm + "-" + maxMonthlyFlightsDivertedNorm;
+        document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + minMonthlyFlightsOnTimeNorm + "-" + maxMonthlyFlightsOnTimeNorm;
+    }
+
     
     // Append the SVG element.
     container.append(svg.node());
-    subplotContainer.append(subplotSVG.node());
+    subplotContainer.append(cancelledSubplotSVG.node());
+    subplotContainer.append(delayedSubplotSVG.node());
+    subplotContainer.append(divertedSubplotSVG.node());
+    subplotContainer.append(onTimeSubplotSVG.node());
     subplotContainer.append(subplotLegend.node());
+    setSliderRangesToUnnormalized();
 </script>
 
 

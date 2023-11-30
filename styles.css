@@ -32,3 +32,8 @@
     display: flex;
     align-items: flex-end;
 }
+
+#subplotContainer {
+    display: flex;
+    align-items: flex-end;
+}
