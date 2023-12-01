@@ -166,6 +166,15 @@
     .attr("class", "x-axis")
     .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
     .call(d3.axisBottom(subplotX));
+    
+    // Add title
+    cancelledSubplotSVG.append("text")
+    .attr('x', subplotWidth / 2)
+    .attr('y', 10)
+    .attr('font-size', '12px')
+    .attr('text-anchor', 'middle')
+    .attr('class', 'title')
+    .text("Cancelled Flights");
 
     // Create delayed subplot SVG container
     const delayedSubplotSVG = d3.create("svg")
@@ -178,6 +187,15 @@
     .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
     .call(d3.axisBottom(subplotX));
 
+    // Add title
+    delayedSubplotSVG.append("text")
+    .attr('x', subplotWidth / 2)
+    .attr('y', 10)
+    .attr('font-size', '12px')
+    .attr('text-anchor', 'middle')
+    .attr('class', 'title')
+    .text("Delayed Flights");
+
     // Create diverted subplot SVG container
     const divertedSubplotSVG = d3.create("svg")
     .attr("width", subplotWidth)
@@ -189,6 +207,15 @@
     .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
     .call(d3.axisBottom(subplotX));
 
+    // Add title
+    divertedSubplotSVG.append("text")
+    .attr('x', subplotWidth / 2)
+    .attr('y', 10)
+    .attr('font-size', '12px')
+    .attr('text-anchor', 'middle')
+    .attr('class', 'title')
+    .text("Diverted Flights");
+
     // Create on-time subplot SVG container
     const onTimeSubplotSVG = d3.create("svg")
     .attr("width", subplotWidth)
@@ -199,6 +226,15 @@
     .attr("class", "x-axis")
     .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
     .call(d3.axisBottom(subplotX));
+
+    // Add title
+    onTimeSubplotSVG.append("text")
+    .attr('x', subplotWidth / 2)
+    .attr('y', 10)
+    .attr('font-size', '12px')
+    .attr('text-anchor', 'middle')
+    .attr('class', 'title')
+    .text("On Time Flights");
 
     // Add legend
     let subplotLegend = d3.create('svg')
@@ -402,9 +438,17 @@
 
             updateCancelledSubplotYAxis();
             updateDelayedSubplotYAxis();
+            updateDivertedSubplotYAxis();
+            updateOnTimeSubplotYAxis();
+            
             updateSubplotXAxis();
+            
             updateCancelledSubplotVis();
             updateDelayedSubplotVis();
+            updateDivertedSubplotVis();
+            updateOnTimeSubplotVis();
+
+            updateSubplotTitles();
         });
     }
 
@@ -482,6 +526,54 @@
         .call(d3.axisLeft(delayedSubplotY).ticks(10));
     }
 
+    function updateDivertedSubplotYAxis() {
+        let axisAirports = Array.from(new Set(selectedSubplotData.map(d => d["Airport.Name"]))).sort(compareStrings);
+        let minFlightsDiverted = d3.min(selectedSubplotData, d => parseInt(d['Statistics.Flights.Diverted']));
+        let maxFlightsDiverted = d3.max(selectedSubplotData, d => parseInt(d['Statistics.Flights.Diverted']));
+
+        if (normalize) {
+            minFlightsDiverted = d3.min(selectedSubplotData, d => parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            maxFlightsDiverted = d3.max(selectedSubplotData, d => parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+        }
+
+        divertedSubplotY = d3.scaleLinear()
+        .domain([minFlightsDiverted, maxFlightsDiverted])
+        .range([subplotHeight - marginBottom, marginTop]);
+
+        if (!divertedSubplotYAxisExists) {
+            divertedSubplotSVG.append('g').attr("class", 'y-axis');
+            divertedSubplotYAxisExists = true;
+        }
+
+        divertedSubplotSVG.select(".y-axis")
+        .attr("transform", `translate(${subplotMarginLeft},0)`)
+        .call(d3.axisLeft(divertedSubplotY).ticks(10));
+    }
+
+    function updateOnTimeSubplotYAxis() {
+        let axisAirports = Array.from(new Set(selectedSubplotData.map(d => d["Airport.Name"]))).sort(compareStrings);
+        let minFlightsOnTime = d3.min(selectedSubplotData, d => parseInt(d['Statistics.Flights.On Time']));
+        let maxFlightsOnTime = d3.max(selectedSubplotData, d => parseInt(d['Statistics.Flights.On Time']));
+
+        if (normalize) {
+            minFlightsOnTime = d3.min(selectedSubplotData, d => parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            maxFlightsOnTime = d3.max(selectedSubplotData, d => parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+        }
+
+        onTimeSubplotY = d3.scaleLinear()
+        .domain([minFlightsOnTime, maxFlightsOnTime])
+        .range([subplotHeight - marginBottom, marginTop]);
+
+        if (!onTimeSubplotYAxisExists) {
+            onTimeSubplotSVG.append('g').attr("class", 'y-axis');
+            onTimeSubplotYAxisExists = true;
+        }
+
+        onTimeSubplotSVG.select(".y-axis")
+        .attr("transform", `translate(${subplotMarginLeft},0)`)
+        .call(d3.axisLeft(onTimeSubplotY).ticks(10));
+    }
+
     function updateSubplotXAxis() {
         let months = [];
         if (selectedSubplotDataYear == 2003) {
@@ -497,8 +589,23 @@
         .range([subplotMarginLeft, subplotWidth - marginRight])
         .padding(1);
 
-        // console.log(months);
+        // Update x-axis for cancelled subplot
         cancelledSubplotSVG.select(".x-axis")
+        .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+        .call(d3.axisBottom(subplotX));
+
+        // Update x-axis for delayed subplot
+        delayedSubplotSVG.select(".x-axis")
+        .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+        .call(d3.axisBottom(subplotX));
+
+        // Update x-axis for diverted subplot
+        divertedSubplotSVG.select(".x-axis")
+        .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
+        .call(d3.axisBottom(subplotX));
+
+        // Update x-axis for on time subplot
+        onTimeSubplotSVG.select(".x-axis")
         .attr("transform", `translate(0,${subplotHeight - marginBottom})`)
         .call(d3.axisBottom(subplotX));
     }
@@ -572,6 +679,8 @@
         .style('fill', d => subplotColors(d['Airport.Name']))
         .style('stroke', 'black');
 
+        // Add title
+
         // Update legend
         updateSubplotLegend(selectedAirports);
     }
@@ -636,6 +745,144 @@
                 return delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
             } else {
                 return delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]))
+            }
+        })
+        .style('fill', d => subplotColors(d['Airport.Name']))
+        .style('stroke', 'black');
+
+        // Update legend
+        updateSubplotLegend(selectedAirports);
+    }
+
+    function updateDivertedSubplotVis() {
+        let selectedAirports = Array.from(new Set(selectedSubplotData.map(data => data['Airport.Name'])));
+        subplotColors.domain(selectedAirports);
+
+        let arrayedSubplotData = [];
+        let size = 12;
+
+        if (selectedSubplotDataYear == 2003) {
+            size = 7;
+        } else if (selectedSubplotDataYear == 2016) {
+            size = 1;
+        }
+
+        let selection = [selectedSubplotData[0]]
+        for (let i = 1; i < selectedSubplotData.length; i++) {
+            selection.push(selectedSubplotData[i]);
+
+            if ((i + 1) % size == 0) {
+                arrayedSubplotData.push(selection);
+                selection = [];
+            }
+        }
+
+        // console.log('Arrayed data:');
+        // console.log(arrayedSubplotData);
+
+        let line = d3.line()
+        .x(d => subplotX(d['Time.Month Name']))
+        .y(d => divertedSubplotY(d['Statistics.Flights.Diverted']));
+
+        if (normalize) {
+            line = d3.line()
+            .x(d => subplotX(d['Time.Month Name']))
+            .y(d => divertedSubplotY(parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+        }
+
+        // Add lines
+        divertedSubplotSVG.selectAll('.line')
+        .data(arrayedSubplotData)
+        .enter()
+        .append('path')
+        .attr('class', 'line')
+        .attr('d', line)
+        .attr('fill', 'none')
+        .attr('stroke-width', '4px')
+        .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
+
+        // Add monthly dots
+        divertedSubplotSVG.selectAll('.dot')
+        .data(selectedSubplotData)
+        .enter()
+        .append('circle')
+        .attr('class', 'dot')
+        .attr('r', 4)
+        .attr('cx', function(d) {return subplotX(d['Time.Month Name'])})
+        .attr('cy', function(d) {
+            if (normalize) {
+                return divertedSubplotY(parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            } else {
+                return divertedSubplotY(parseFloat(d["Statistics.Flights.Diverted"]))
+            }
+        })
+        .style('fill', d => subplotColors(d['Airport.Name']))
+        .style('stroke', 'black');
+
+        // Update legend
+        updateSubplotLegend(selectedAirports);
+    }
+
+    function updateOnTimeSubplotVis() {
+        let selectedAirports = Array.from(new Set(selectedSubplotData.map(data => data['Airport.Name'])));
+        subplotColors.domain(selectedAirports);
+
+        let arrayedSubplotData = [];
+        let size = 12;
+
+        if (selectedSubplotDataYear == 2003) {
+            size = 7;
+        } else if (selectedSubplotDataYear == 2016) {
+            size = 1;
+        }
+
+        let selection = [selectedSubplotData[0]]
+        for (let i = 1; i < selectedSubplotData.length; i++) {
+            selection.push(selectedSubplotData[i]);
+
+            if ((i + 1) % size == 0) {
+                arrayedSubplotData.push(selection);
+                selection = [];
+            }
+        }
+
+        // console.log('Arrayed data:');
+        // console.log(arrayedSubplotData);
+
+        let line = d3.line()
+        .x(d => subplotX(d['Time.Month Name']))
+        .y(d => onTimeSubplotY(d['Statistics.Flights.On Time']));
+
+        if (normalize) {
+            line = d3.line()
+            .x(d => subplotX(d['Time.Month Name']))
+            .y(d => onTimeSubplotY(parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
+        }
+
+        // Add lines
+        onTimeSubplotSVG.selectAll('.line')
+        .data(arrayedSubplotData)
+        .enter()
+        .append('path')
+        .attr('class', 'line')
+        .attr('d', line)
+        .attr('fill', 'none')
+        .attr('stroke-width', '4px')
+        .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
+
+        // Add monthly dots
+        onTimeSubplotSVG.selectAll('.dot')
+        .data(selectedSubplotData)
+        .enter()
+        .append('circle')
+        .attr('class', 'dot')
+        .attr('r', 4)
+        .attr('cx', function(d) {return subplotX(d['Time.Month Name'])})
+        .attr('cy', function(d) {
+            if (normalize) {
+                return onTimeSubplotY(parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000);
+            } else {
+                return onTimeSubplotY(parseFloat(d["Statistics.Flights.On Time"]))
             }
         })
         .style('fill', d => subplotColors(d['Airport.Name']))
@@ -815,6 +1062,20 @@
         document.querySelector("#monthlyDelaysSliderValues").textContent = "Range: " + minMonthlyFlightsDelayedNorm + "-" + maxMonthlyFlightsDelayedNorm;
         document.querySelector("#monthlyDiversionsSliderValues").textContent = "Range: " + minMonthlyFlightsDivertedNorm + "-" + maxMonthlyFlightsDivertedNorm;
         document.querySelector("#monthlyOnTimeSliderValues").textContent = "Range: " + minMonthlyFlightsOnTimeNorm + "-" + maxMonthlyFlightsOnTimeNorm;
+    }
+
+    function updateSubplotTitles() {
+        cancelledSubplotSVG.select('.title')
+        .text(selectedSubplotDataYear + ' Cancelled Flights');
+        
+        delayedSubplotSVG.select('.title')
+        .text(selectedSubplotDataYear + ' Delayed Flights');
+
+        divertedSubplotSVG.select('.title')
+        .text(selectedSubplotDataYear + ' Diverted Flights');
+
+        onTimeSubplotSVG.select('.title')
+        .text(selectedSubplotDataYear + ' On Time Flights');
     }
 
     
