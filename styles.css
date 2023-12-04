@@ -33,7 +33,8 @@
     align-items: flex-end;
 }
 
-#subplotContainer {
+#subplotMainContainer {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: center;
 }
