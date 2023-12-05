@@ -25,7 +25,6 @@
 }
 
 #controlsContainer {
-    width: fit-content;
 }
 
 #mainContainer {
@@ -37,4 +36,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+#sliderContainer {
+    display: flex;
+    gap: 2rem;
 }

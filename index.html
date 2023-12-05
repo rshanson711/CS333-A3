@@ -22,25 +22,27 @@
         <label for="resetButton">
             <button id="resetButton">Reset Settings</button>
         </label>
-        <div id="monthlyCancellationsSliderContainer">
-            <h2>Monthly Flights Cancelled</h2>
-            <div id="monthlyCancellationsSlider"></div>
-            <p id="monthlyCancellationsSliderValues"></p>
-        </div>
-        <div id="monthlyDelaysSliderContainer">
-            <h2>Monthly Flights Delayed</h2>
-            <div id="monthlyDelaysSlider"></div>
-            <p id="monthlyDelaysSliderValues"></p>
-        </div>
-        <div id="monthlyDiversionsSliderContainer">
-            <h2>Monthly Flights Diverted</h2>
-            <div id="monthlyDiversionsSlider"></div>
-            <p id="monthlyDiversionsSliderValues"></p>
-        </div>
-        <div id="monthlyOnTimeSliderContainer">
-            <h2>Monthly Flights On-Time</h2>
-            <div id="monthlyOnTimeSlider"></div>
-            <p id="monthlyOnTimeSliderValues"></p>
+        <div id="sliderContainer">
+            <div id="monthlyCancellationsSliderContainer">
+                <h2>Monthly Flights Cancelled</h2>
+                <div id="monthlyCancellationsSlider"></div>
+                <p id="monthlyCancellationsSliderValues"></p>
+            </div>
+            <div id="monthlyDelaysSliderContainer">
+                <h2>Monthly Flights Delayed</h2>
+                <div id="monthlyDelaysSlider"></div>
+                <p id="monthlyDelaysSliderValues"></p>
+            </div>
+            <div id="monthlyDiversionsSliderContainer">
+                <h2>Monthly Flights Diverted</h2>
+                <div id="monthlyDiversionsSlider"></div>
+                <p id="monthlyDiversionsSliderValues"></p>
+            </div>
+            <div id="monthlyOnTimeSliderContainer">
+                <h2>Monthly Flights On-Time</h2>
+                <div id="monthlyOnTimeSlider"></div>
+                <p id="monthlyOnTimeSliderValues"></p>
+            </div>
         </div>
     </div>
     
@@ -484,7 +486,13 @@
 
     function getSubplotTooltipText(parameter, data) {
         let output = `${data['Airport.Name']}<br>`;
-        output = output + data['Time.Month Name'] + ' - ' + data[parameter];
+        let param_value = data[parameter];
+
+        if (normalize) {
+            param_value = parseInt(parseFloat(data[parameter]) / parseFloat(data["Statistics.Flights.Total"]) * 1000);
+        }
+
+        output = output + data['Time.Month Name'] + ' - ' + param_value;
 
         return output;
     }
