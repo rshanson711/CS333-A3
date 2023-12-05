@@ -668,6 +668,12 @@
             .y(d => cancelledSubplotY(parseFloat(d["Statistics.Flights.Cancelled"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
+        // Remove old lines first
+        if (selectedSubplotDataYear != 2016) {
+            cancelledSubplotSVG.selectAll('.line')
+            .remove();
+        }
+
         // Add lines
         if (selectedSubplotDataYear != 2016) {
             cancelledSubplotSVG.selectAll('.line')
@@ -680,7 +686,9 @@
             .attr('stroke-width', '4px')
             .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
         }
-        
+
+        // Remove old dots first
+        cancelledSubplotSVG.selectAll('.dot').remove();        
 
         // Add monthly dots
         cancelledSubplotSVG.selectAll('.dot')
@@ -750,6 +758,12 @@
             .y(d => delayedSubplotY(parseFloat(d["Statistics.Flights.Delayed"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
+        // Remove old lines first
+        if (selectedSubplotDataYear != 2016) {
+            delayedSubplotSVG.selectAll('.line')
+            .remove();
+        }
+
         // Add lines
         if (selectedSubplotDataYear != 2016) {
             delayedSubplotSVG.selectAll('.line')
@@ -762,6 +776,9 @@
             .attr('stroke-width', '4px')
             .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
         }
+
+        // Remove old dots first
+        delayedSubplotSVG.selectAll('.dot').remove();
         
         // Add monthly dots
         delayedSubplotSVG.selectAll('.dot')
@@ -830,6 +847,12 @@
             .y(d => divertedSubplotY(parseFloat(d["Statistics.Flights.Diverted"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
+        // Remove old lines first
+        if (selectedSubplotDataYear != 2016) {
+            divertedSubplotSVG.selectAll('.line')
+            .remove();
+        }
+
         // Add lines
         if (selectedSubplotDataYear != 2016) {
             divertedSubplotSVG.selectAll('.line')
@@ -842,6 +865,9 @@
             .attr('stroke-width', '4px')
             .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
         }
+
+        // Remove old dots first
+        divertedSubplotSVG.selectAll('.dot').remove();
         
         // Add monthly dots
         divertedSubplotSVG.selectAll('.dot')
@@ -910,6 +936,12 @@
             .y(d => onTimeSubplotY(parseFloat(d["Statistics.Flights.On Time"]) / parseFloat(d["Statistics.Flights.Total"]) * 1000));
         }
 
+        // Remove old lines first
+        if (selectedSubplotDataYear != 2016) {
+            onTimeSubplotSVG.selectAll('.line')
+            .remove();
+        }
+
         // Add lines
         if (selectedSubplotDataYear != 2016) {
             onTimeSubplotSVG.selectAll('.line')
@@ -922,6 +954,9 @@
             .attr('stroke-width', '4px')
             .attr('stroke', d => subplotColors(d[0]['Airport.Name']));
         }
+
+        // Remove old dots first
+        onTimeSubplotSVG.selectAll('.dot').remove();
 
         // Add monthly dots
         onTimeSubplotSVG.selectAll('.dot')
