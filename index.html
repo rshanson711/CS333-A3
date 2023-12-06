@@ -511,6 +511,7 @@
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY + 15) + "px");
             highlightUsingAirportName(airportDict[d['Airport.Name']]);
+            mainPlotHighlightColWithRow(airportDict[d['Airport.Name']], d['Time.Year']);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
@@ -620,6 +621,10 @@
 
     function unhighlightUsingYear() {
         d3.selectAll('circle').classed('highlight', false);
+    }
+
+    function mainPlotHighlightColWithRow(rowId, year) {
+        d3.selectAll(".mainDot").classed("highlight", d => (d['Time.Year'] == year || airportDict[d['Airport.Name']] == rowId));
     }
 
     function updateCancelledSubplotYAxis() {
@@ -1128,6 +1133,7 @@
         .attr('class', 'legendBar')
         .on('mouseover', (event, d) => {
             highlightUsingAirportName(airportDict[d]);
+            mainPlotHighlightColWithRow(airportDict[d], selectedSubplotDataYear);
         })
         .on('mouseout', () => {
             unhighlightUsingAirportName();
@@ -1144,6 +1150,7 @@
         .style('font-size', '12px')
         .on('mouseover', (event, d) => {
             highlightUsingAirportName(airportDict[d]);
+            mainPlotHighlightColWithRow(airportDict[d], selectedSubplotDataYear);
         })
         .on('mouseout', () => {
             unhighlightUsingAirportName();
