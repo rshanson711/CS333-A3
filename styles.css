@@ -16,8 +16,7 @@ body {
 }
 
 .highlight {
-    stroke: red !important;
-    fill: gold !important;
+    stroke-width: 3px;
 }
 
 .dim {

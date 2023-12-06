@@ -135,6 +135,7 @@
     let onTimeSubplotYAxisExists = false;
     let subplotLinesExist = false;
     let mainPlotHues = ["#F1EEF6", "#D7B5D8", "#DF65B0", "#CE1256"]
+    let numSelectedAirports = 0;
 
     // Declare the x (horizontal position) scale.
     const x = d3.scaleLinear()
@@ -175,12 +176,44 @@
     // Add the x-axis.
     svg.append("g")
         .attr("transform", `translate(0,${height - marginBottom})`)
+        .attr('class', 'mainPlotXTick')
         .call(d3.axisBottom(x).tickFormat(d3.format(".0f")));
 
     // Add the y-axis.
     svg.append("g")
         .attr("transform", `translate(${marginLeft},0)`)
+        .attr('class', 'mainPlotYTick')
         .call(d3.axisLeft(y).ticks(29));
+
+    // SVG tick mark interactivity
+    svg.selectAll('.mainPlotXTick')
+    .on('mouseover', (event, d) => {
+        let year = event.target.textContent;
+        console.log(year);
+        if (year != '') {
+            highlightUsingYear(year);
+        }
+    })
+    .on('mouseout', (event, d) => {
+        let year = event.target.textContent;
+        if (year != '') {
+            unhighlightUsingYear(year);
+        }
+    });
+
+    svg.selectAll('.mainPlotYTick')
+    .on('mouseover', (event, d) => {
+        let airport = event.target.textContent;
+        if (airport != '') {
+            highlightUsingAirportName(airportDict[airport]);
+        }
+    })
+    .on('mouseout', (event, d) => {
+        let airport = event.target.textContent;
+        if (airport != '') {
+            unhighlightUsingAirportName(airportDict[airport]);
+        }
+    });
 
     // Add main plot legend
     let mainPlotLegend = d3.create('svg')
@@ -349,6 +382,7 @@
 
         // Remove everything subplot-related
         clearSubplotsAndLegend();
+        numSelectedAirports = 0;
 
         if (this.checked) {
             normalize = true;
@@ -370,6 +404,7 @@
         setSlidersToUnnormalized();
         setSliderRangesToUnnormalized();
         svg.selectAll('circle').remove();
+        numSelectedAirports = 0;
     });
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
@@ -442,14 +477,13 @@
         .attr("cy", function(d) {return y(d['Airport.Name'])})
         .attr("rowId", function(d) {return airportDict[d['Airport.Name']]})
         .attr('class', 'mainDot')
-        // .style("fill-opacity", 1/12)
         .style('fill', function(d) {
             let key = d['Airport.Name'] + ' ' + d['Time.Year'];
 
             if (airportYearDict[key] == null) {
                 airportYearDict[key] = 1;
             } else {
-                airportYearDict[key] += 1;
+                airportYearDict[key]++;
             }
 
             let totalMonths = airportYearDict[key];
@@ -471,12 +505,12 @@
             let text = getMainPlotTooltipText(d);
 
             tooltip.transition().duration(200).style("opacity", 0.9);
-            tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlight(airportDict[d['Airport.Name']]);
+            tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY + 15) + "px");
+            highlightUsingAirportName(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlight();
+            unhighlightUsingAirportName();
         })
         .on("click", (event, d) => {
             let dataYear = parseInt(d['Time.Year']);
@@ -485,28 +519,32 @@
             if (selectedSubplotDataYear != dataYear) {
                 clearSubplotsAndLegend();
                 selectedSubplotDataYear = dataYear;
+                numSelectedAirports = 0
             }
             
-            for (let i = 0; i < data.length; i++) {
-                if (data[i]['Airport.Name'] == d['Airport.Name'] && data[i]['Time.Year'] == dataYear) {
-                    selectedSubplotData.push(data[i]);
+            if (numSelectedAirports < 10) {
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i]['Airport.Name'] == d['Airport.Name'] && data[i]['Time.Year'] == dataYear) {
+                        selectedSubplotData.push(data[i]);
+                    }
                 }
+                selectedSubplotData = [...new Set(selectedSubplotData)];
+
+                updateCancelledSubplotYAxis();
+                updateDelayedSubplotYAxis();
+                updateDivertedSubplotYAxis();
+                updateOnTimeSubplotYAxis();
+                
+                updateSubplotXAxis();
+                
+                updateCancelledSubplotVis();
+                updateDelayedSubplotVis();
+                updateDivertedSubplotVis();
+                updateOnTimeSubplotVis();
+
+                updateSubplotTitles();
+                numSelectedAirports++;
             }
-            selectedSubplotData = [...new Set(selectedSubplotData)];
-
-            updateCancelledSubplotYAxis();
-            updateDelayedSubplotYAxis();
-            updateDivertedSubplotYAxis();
-            updateOnTimeSubplotYAxis();
-            
-            updateSubplotXAxis();
-            
-            updateCancelledSubplotVis();
-            updateDelayedSubplotVis();
-            updateDivertedSubplotVis();
-            updateOnTimeSubplotVis();
-
-            updateSubplotTitles();
         });
     }
 
@@ -535,17 +573,24 @@
         return output;
     }
 
-    function highlight(rowId) {
-        d3.selectAll(".mainDot").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
-        d3.selectAll(".dot").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
+    function highlightUsingAirportName(rowId) {
+        d3.selectAll("circle").classed("highlight", d => airportDict[d['Airport.Name']] == rowId);
         d3.selectAll(".dot").classed("dim", d => airportDict[d['Airport.Name']] != rowId);
         d3.selectAll('.line').classed('dim', d => airportDict[d[0]['Airport.Name']] != rowId);
     }
 
-    function unhighlight() {
+    function unhighlightUsingAirportName() {
         d3.selectAll("circle").classed("highlight", false);
-        d3.selectAll(".dot").classed("dim", false);
+        d3.selectAll("circle").classed("dim", false);
         d3.selectAll('.line').classed('dim', false);
+    }
+
+    function highlightUsingYear(rowId) {
+        d3.selectAll(".mainDot").classed("highlight", d => d['Time.Year'] == rowId);
+    }
+
+    function unhighlightUsingYear() {
+        d3.selectAll('circle').classed('highlight', false);
     }
 
     function updateCancelledSubplotYAxis() {
@@ -759,11 +804,11 @@
 
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlight(airportDict[d['Airport.Name']]);
+            highlightUsingAirportName(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlight();
+            unhighlightUsingAirportName();
         });
 
 
@@ -849,11 +894,11 @@
 
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlight(airportDict[d['Airport.Name']]);
+            highlightUsingAirportName(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlight();
+            unhighlightUsingAirportName();
         });
 
         // Update legend
@@ -938,11 +983,11 @@
 
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlight(airportDict[d['Airport.Name']]);
+            highlightUsingAirportName(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlight();
+            unhighlightUsingAirportName();
         });
 
         // Update legend
@@ -1027,11 +1072,11 @@
 
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(text).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px");
-            highlight(airportDict[d['Airport.Name']]);
+            highlightUsingAirportName(airportDict[d['Airport.Name']]);
         })
         .on("mouseout", () => {
             tooltip.transition().duration(500).style("opacity", 0);
-            unhighlight();
+            unhighlightUsingAirportName();
         });
 
         // Update legend
@@ -1050,10 +1095,10 @@
         .attr('fill', d => subplotColors(d))
         .attr('class', 'legendBar')
         .on('mouseover', (event, d) => {
-            highlight(airportDict[d]);
+            highlightUsingAirportName(airportDict[d]);
         })
         .on('mouseout', () => {
-            unhighlight();
+            unhighlightUsingAirportName();
         });
 
         subplotLegend.selectAll('text')
@@ -1066,10 +1111,10 @@
         .text(d => d)
         .style('font-size', '12px')
         .on('mouseover', (event, d) => {
-            highlight(airportDict[d]);
+            highlightUsingAirportName(airportDict[d]);
         })
         .on('mouseout', () => {
-            unhighlight();
+            unhighlightUsingAirportName();
         });
     }
 
