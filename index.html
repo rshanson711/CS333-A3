@@ -136,6 +136,7 @@
     let subplotLinesExist = false;
     let mainPlotHues = ["#F1EEF6", "#D7B5D8", "#DF65B0", "#CE1256"]
     let numSelectedAirports = 0;
+    let selectedAirportNames = [];
 
     // Declare the x (horizontal position) scale.
     const x = d3.scaleLinear()
@@ -389,23 +390,26 @@
             setSlidersToNormalized();
             setSliderRangesToNormalized();
             svg.selectAll('circle').remove();
-            
+            selectedAirportNames = [];            
         } else {
             normalize = false;
-            setSlidersToUnnormalized();
-            setSliderRangesToUnnormalized();
-            svg.selectAll('circle').remove();
+            commonReset();
         }
     });
 
     document.getElementById("resetButton").addEventListener('click', () => {
         clearSubplotsAndLegend();
         document.getElementById('normalizeCheckbox').checked = false;
+        commonReset();
+        numSelectedAirports = 0;
+    });
+
+    function commonReset() {
         setSlidersToUnnormalized();
         setSliderRangesToUnnormalized();
         svg.selectAll('circle').remove();
-        numSelectedAirports = 0;
-    });
+        selectedAirportNames = [];
+    }
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 
@@ -515,19 +519,44 @@
         .on("click", (event, d) => {
             let dataYear = parseInt(d['Time.Year']);
             let newSelection = [];
+            let removeAirport = false;
 
             if (selectedSubplotDataYear != dataYear) {
                 clearSubplotsAndLegend();
                 selectedSubplotDataYear = dataYear;
                 numSelectedAirports = 0
+                selectedAirportNames = [];
+            }
+
+            for (let i = 0; i < selectedAirportNames.length; i++) {
+                if (d['Airport.Name'] == selectedAirportNames[i]) {
+                    removeAirport = true;
+                }
             }
             
-            if (numSelectedAirports < 10) {
-                for (let i = 0; i < data.length; i++) {
-                    if (data[i]['Airport.Name'] == d['Airport.Name'] && data[i]['Time.Year'] == dataYear) {
-                        selectedSubplotData.push(data[i]);
+            // Only continue if we don't already have 10 airports or are removing an airport
+            if (numSelectedAirports < 10 || removeAirport) {
+
+                // If not removing an airport, add data
+                if (!removeAirport && numSelectedAirports < 10) {
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i]['Airport.Name'] == d['Airport.Name'] && data[i]['Time.Year'] == dataYear) {
+                            selectedSubplotData.push(data[i]);
+                        }
                     }
+
+                    numSelectedAirports++;
+                    selectedAirportNames.push(d['Airport.Name']);
+                } else if (removeAirport) { // Else remove airport from selectedSubplotData
+                    for (let i = 0; i < selectedSubplotData.length; i++) {
+                        selectedSubplotData = selectedSubplotData.filter(entry => entry['Airport.Name'] != d['Airport.Name']);
+                    }
+
+                    numSelectedAirports--;
+                    selectedAirportNames.splice(selectedAirportNames.indexOf(d['Airport.Name']), 1);
                 }
+                
+                // Update vizs
                 selectedSubplotData = [...new Set(selectedSubplotData)];
 
                 updateCancelledSubplotYAxis();
@@ -543,7 +572,7 @@
                 updateOnTimeSubplotVis();
 
                 updateSubplotTitles();
-                numSelectedAirports++;
+                
             }
         });
     }
@@ -1084,6 +1113,9 @@
     }
 
     function updateSubplotLegend(selectedAirports) {
+        subplotLegend.selectAll('rect').remove();
+        subplotLegend.selectAll('text').remove();
+
         subplotLegend.selectAll('rect')
         .data(selectedAirports)
         .enter()
